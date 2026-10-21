@@ -1,0 +1,57 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/debian-12"
+  config.vm.hostname = "d3b"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = false
+    vb.cpus = 2
+    vb.memory = 2048
+  end
+
+  SERVER_IP = "192.168.50.67"
+  WORKER_IP = "192.168.50.69"
+  K3S_TOKEN = "some-random-token-i-guess"
+
+  config.vm.define "d3bs" do |server_config|
+    server_config.vm.hostname = "d3bs"
+    server_config.vm.network "private_network", ip: SERVER_IP
+    server_config.vm.provision "shell", inline: <<-SHELL
+      set -e
+      apt-get update && apt-get install -y curl
+      IFACE=$(ip -o -4 addr show | awk '$4 ~ /^#{SERVER_IP}\\// {print $2}')
+      curl -sfL https://get.k3s.io | \
+        K3S_TOKEN="#{K3S_TOKEN}" \
+        INSTALL_K3S_EXEC="server --node-ip=#{SERVER_IP} --advertise-address=#{SERVER_IP} --flannel-iface=$IFACE --write-kubeconfig-mode=644" \
+        sh -
+    SHELL
+  end
+
+  config.vm.define "d3bsw" do |worker_config|
+    worker_config.vm.hostname = "d3bsw"
+    worker_config.vm.network "private_network", ip: WORKER_IP
+    worker_config.vm.provision "shell", inline: <<-SHELL
+      set -e
+      apt-get update && apt-get install -y netcat-openbsd
+      OK=0
+      for i in $(seq 1 60); do
+        if nc -z "#{SERVER_IP}" 6443; then
+          OK=1
+          break ;
+        fi
+        echo "Waiting for server #{SERVER_IP} 6443 ($i/60)"
+        sleep 5
+      done
+      if [ "$OK" -ne 1 ]; then
+        echo "Server unreachable" >&2
+        exit 1
+      fi
+      IFACE=$(ip -o -4 addr show | awk '$4 ~ /^#{WORKER_IP}\\// {print $2}')
+      curl -sfL https://get.k3s.io | \
+        K3S_TOKEN="#{K3S_TOKEN}" \
+        K3S_URL="https://#{SERVER_IP}:6443" \
+        INSTALL_K3S_EXEC="agent --node-ip=#{WORKER_IP} --flannel-iface=$IFACE" \
+        sh -
+    SHELL
+  end
+
+end
