@@ -31,7 +31,7 @@ Vagrant.configure("2") do |config|
     worker_config.vm.network "private_network", ip: WORKER_IP
     worker_config.vm.provision "shell", inline: <<-SHELL
       set -e
-      apt-get update && apt-get install -y netcat-openbsd
+      apt-get update && apt-get install -y curl netcat-openbsd
       OK=0
       for i in $(seq 1 60); do
         if nc -z "#{SERVER_IP}" 6443; then
