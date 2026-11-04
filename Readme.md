@@ -199,8 +199,6 @@ La capture suivante montre les quatre commandes de vérification exécutées sur
 12. Dans chaque ligne, `1/1` signifie que l'unique conteneur du Pod est prêt.
 13. Dans chaque ligne, `Running` signifie que le conteneur Nginx est en cours d'exécution.
 14. `0` indique qu'aucun des conteneurs Nginx n'a redémarré.
-15. `7m8s` indique que les trois Pods ont été démarrés il y a environ sept minutes.
-16. `vagrant@d3bs:/tmp$` sur la dernière ligne est le prompt affiché après l'exécution des commandes. Il indique que la VM est prête à recevoir une nouvelle commande.
 
 ### Supprimer l'application de démonstration
 
